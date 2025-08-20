@@ -14,12 +14,12 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
   const { name, email, phone_number, password } = userDto;
 
   try {
-    // const apiUrl = `${externalApi}/${phone_number}`;
-    // const { data: erpResponse } = await axios.get(apiUrl);
+    const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
+    const { data: erpResponse } = await axios.get(apiUrl);
 
-    // if (!erpResponse.status) {
-    //   throw new Error("Student not found in ERP system.");
-    // }
+    if (!erpResponse.status) {
+      throw new Error("Student not found in ERP system.");
+    }
 
     const existingUser = await User.findOne({ phone_number });
     if (existingUser) {
@@ -58,7 +58,7 @@ const _loginForStudent = async (loginDto: LoginDto) => {
       throw new Error("Invalid password");
     }
 
-    const apiUrl = `${externalApi}${phone_number}`;
+    const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
     const { data: erpResponse } = await axios.get(apiUrl);
 
     if (!erpResponse?.status) {
