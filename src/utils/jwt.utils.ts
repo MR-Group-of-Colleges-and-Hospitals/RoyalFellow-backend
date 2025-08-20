@@ -1,7 +1,6 @@
 import { Types } from "mongoose";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-dotenv.config();
+
 
 interface DecodedAccessToken {
   userId: Types.ObjectId;
