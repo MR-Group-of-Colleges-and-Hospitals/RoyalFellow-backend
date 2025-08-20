@@ -33,7 +33,7 @@ const RegisterStudentController = async (req: Request, res: Response) => {
       );
   } catch (err: any) {
     return res
-      .status(400)
+      .status(500)
       .json(new SuccessResponse(err.message || "Registration failed", 400));
   }
 };
