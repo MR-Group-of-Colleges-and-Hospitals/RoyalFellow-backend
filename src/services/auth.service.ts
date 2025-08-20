@@ -40,9 +40,7 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
     }
     console.log(error);
 
-    throw new Error(
-      error.message || "Something went wrong while registering student."
-    );
+    throw new Error(error.message);
   }
 };
 
