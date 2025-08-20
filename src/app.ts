@@ -4,6 +4,7 @@ dotenv.config();
 
 import cors from "cors";
 import { connect, getDbStatus } from "../config/db.config";
+import mainRouter from "./routes";
 
 const app: Application = express();
 
@@ -19,6 +20,8 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.use("/api", mainRouter);
 
 app.get("/status", async (req: any, res: any) => {
   try {
