@@ -1,0 +1,30 @@
+import { Types } from "mongoose";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
+
+interface DecodedAccessToken {
+  userId: Types.ObjectId;
+  iat: number;
+  exp: number;
+}
+const generateAccessToken = (userId: Types.ObjectId): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET is not defined in the environment variables");
+  }
+  const payload = {
+    userId,
+  };
+  try {
+    const expiration = process.env.JWT_EXPIRATION || "1h";
+    const token = jwt.sign(payload, secret, { expiresIn: expiration as any });
+
+    return token;
+  } catch (error) {
+    console.error("Error generating JWT token:", error);
+    throw new Error("Failed to generate authentication token");
+  }
+};
+
+export { generateAccessToken };
