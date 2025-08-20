@@ -6,6 +6,9 @@ import cors from "cors";
 import { connect, getDbStatus } from "../config/db.config";
 import mainRouter from "./routes";
 
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
+
 const app: Application = express();
 
 const PORT = process.env.PORT || 8850;

@@ -5,10 +5,7 @@ import User from "../models/user.model";
 import { generateAccessToken } from "../utils/jwt.utils";
 import { LoginDto } from "../dtos/login.dto";
 
-const externalApi = (
-  process.env.ERP_MASTER_API ||
-  "https://erp.mrgroupofcolleges.co.in/api/get-student/"
-).replace(/\/$/, "");
+
 
 const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
   const { name, email, phone_number, password } = userDto;
