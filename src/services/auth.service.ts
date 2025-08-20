@@ -5,15 +5,16 @@ import User from "../models/user.model";
 import { generateAccessToken } from "../utils/jwt.utils";
 import { LoginDto } from "../dtos/login.dto";
 
-const externalApi =
+const externalApi = (
   process.env.ERP_MASTER_API ||
-  "https://erp.mrgroupofcolleges.co.in/api/get-student/";
+  "https://erp.mrgroupofcolleges.co.in/api/get-student/"
+).replace(/\/$/, "");
 
 const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
   const { name, email, phone_number, password } = userDto;
 
   try {
-    const apiUrl = `${externalApi}${phone_number}`;
+    const apiUrl = `${externalApi}/${phone_number}`;
     const { data: erpResponse } = await axios.get(apiUrl);
 
     if (!erpResponse.status) {
@@ -37,6 +38,7 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
       throw new Error("Student does not exist in our records!");
     }
+    console.log(error);
 
     throw new Error(
       error.message || "Something went wrong while registering student."
