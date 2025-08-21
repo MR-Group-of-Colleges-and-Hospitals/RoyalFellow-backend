@@ -1,14 +1,46 @@
 import { Request, Response } from "express";
 import { _loginForStudent, _registerStudent } from "../services/auth.service";
-
 import SuccessResponse from "../middlewares/success.middleware";
-import axios from "axios";
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
+
+// Extend AxiosRequestConfig to include retry properties
+interface CustomAxiosRequestConfig extends AxiosRequestConfig {
+  retry?: number;
+  retryCount?: number;
+  retryDelay?: number;
+}
 
 interface LoginDto {
   email: string;
   password: string;
   phone_number: string;
 }
+
+// Create axios instance with retry configuration
+const axiosWithRetry = axios.create();
+
+// Add retry interceptor
+axiosWithRetry.interceptors.response.use(undefined, (error: AxiosError) => {
+  const config = error.config as CustomAxiosRequestConfig;
+  if (!config || !config.retry) {
+    return Promise.reject(error);
+  }
+
+  config.retryCount = config.retryCount || 0;
+
+  if (config.retryCount >= config.retry) {
+    return Promise.reject(error);
+  }
+
+  config.retryCount += 1;
+
+  return new Promise((resolve) => {
+    setTimeout(
+      () => resolve(axiosWithRetry(config)),
+      config.retryDelay || 2000
+    );
+  });
+});
 
 const RegisterStudentController = async (req: Request, res: Response) => {
   try {
@@ -92,20 +124,65 @@ const LoginStudentController = async (req: Request, res: Response) => {
   }
 };
 
-const StudentDetailsController = async (req: Request, res: Response) => {
+const StudentDetailsController = async (req: any, res: any) => {
   try {
     const { mobile } = req.params;
 
-    // Call Laravel API
-    const response = await axios.get(
-      `https://erp.mrgroupofcolleges.co.in/api/get-student/${mobile}`
+    // Use environment variable for API URL with fallback
+    const API_BASE_URL =
+      process.env.ERP_API_URL || "https://erp.mrgroupofcolleges.co.in";
+
+    // Call Laravel API with timeout and retry configuration
+    const response = await axiosWithRetry.get(
+      `${API_BASE_URL}/api/get-student/${mobile}`,
+      {
+        timeout: 15000, // 15 seconds timeout
+        retry: 3, // Retry 3 times
+        retryDelay: 2000, // Wait 2 seconds between retries
+        headers: {
+          "User-Agent": "Student-Dashboard-Backend/1.0.0",
+          Accept: "application/json",
+          "Accept-Encoding": "gzip, deflate, br",
+        },
+      } as CustomAxiosRequestConfig
     );
 
     // Send back data to client
     res.json(response.data);
   } catch (error: any) {
     console.error("Error fetching student:", error);
-    res.status(500).json({ error: "Failed to fetch student" });
+
+    // More specific error handling
+    if (error.code === "ETIMEDOUT" || error.code === "ENETUNREACH") {
+      res.status(504).json({
+        success: false,
+        error: "external_service_timeout",
+        message:
+          "The student information service is currently unavailable. Please try again later.",
+      });
+    } else if (error.response) {
+      // The request was made and the server responded with a status code
+      res.status(error.response.status).json({
+        success: false,
+        error: "external_api_error",
+        message: "External API returned an error",
+        data: error.response.data,
+      });
+    } else if (error.request) {
+      // The request was made but no response was received
+      res.status(503).json({
+        success: false,
+        error: "service_unavailable",
+        message:
+          "Could not connect to student information service. Please check your network connection.",
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "internal_server_error",
+        message: "Failed to fetch student information",
+      });
+    }
   }
 };
 
