@@ -1,14 +1,7 @@
 import { Request, Response } from "express";
 import { _loginForStudent, _registerStudent } from "../services/auth.service";
 import SuccessResponse from "../middlewares/success.middleware";
-import axios, { AxiosError, AxiosRequestConfig } from "axios";
-
-// Extend AxiosRequestConfig to include retry properties
-interface CustomAxiosRequestConfig extends AxiosRequestConfig {
-  retry?: number;
-  retryCount?: number;
-  retryDelay?: number;
-}
+import axios, { AxiosError } from "axios";
 
 interface LoginDto {
   email: string;
@@ -16,31 +9,34 @@ interface LoginDto {
   phone_number: string;
 }
 
-// Create axios instance with retry configuration
-const axiosWithRetry = axios.create();
+// Create custom axios instance with better configuration
+const apiClient = axios.create();
 
-// Add retry interceptor
-axiosWithRetry.interceptors.response.use(undefined, (error: AxiosError) => {
-  const config = error.config as CustomAxiosRequestConfig;
-  if (!config || !config.retry) {
-    return Promise.reject(error);
-  }
-
-  config.retryCount = config.retryCount || 0;
-
-  if (config.retryCount >= config.retry) {
-    return Promise.reject(error);
-  }
-
-  config.retryCount += 1;
-
-  return new Promise((resolve) => {
-    setTimeout(
-      () => resolve(axiosWithRetry(config)),
-      config.retryDelay || 2000
-    );
-  });
+// Add request interceptor for better logging
+apiClient.interceptors.request.use((config) => {
+  console.log(`Making API call to: ${config.url}`);
+  console.log(`Method: ${config.method}, Timeout: ${config.timeout}ms`);
+  return config;
 });
+
+// Add response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log(
+      `API call successful: ${response.status} ${response.statusText}`
+    );
+    return response;
+  },
+  (error: AxiosError) => {
+    console.error("API call failed:", {
+      code: error.code,
+      message: error.message,
+      url: error.config?.url,
+      method: error.config?.method,
+    });
+    return Promise.reject(error);
+  }
+);
 
 const RegisterStudentController = async (req: Request, res: Response) => {
   try {
@@ -73,12 +69,12 @@ const RegisterStudentController = async (req: Request, res: Response) => {
       err.message.includes("timeout") ||
       err.message.includes("connect")
     ) {
-      statusCode = 503; // Service Unavailable
+      statusCode = 503;
     } else if (
       err.message.includes("not found") ||
       err.message.includes("does not exist")
     ) {
-      statusCode = 404; // Not Found
+      statusCode = 404;
     }
 
     return res
@@ -124,65 +120,130 @@ const LoginStudentController = async (req: Request, res: Response) => {
   }
 };
 
-const StudentDetailsController = async (req: any, res: any) => {
+const StudentDetailsController = async (req: Request, res: Response) => {
   try {
     const { mobile } = req.params;
-
-    // Use environment variable for API URL with fallback
     const API_BASE_URL =
       process.env.ERP_API_URL || "https://erp.mrgroupofcolleges.co.in";
 
-    // Call Laravel API with timeout and retry configuration
-    const response = await axiosWithRetry.get(
+    console.log(`Fetching student data for mobile: ${mobile}`);
+    console.log(`External API URL: ${API_BASE_URL}`);
+
+    // Solution 1: Use axios with proper configuration for cross-server communication
+    const response = await apiClient.get(
       `${API_BASE_URL}/api/get-student/${mobile}`,
       {
-        timeout: 15000, // 15 seconds timeout
-        retry: 3, // Retry 3 times
-        retryDelay: 2000, // Wait 2 seconds between retries
+        timeout: 25000, // 25 seconds timeout
+        maxRedirects: 5,
+        validateStatus: (status) => status < 500, // Don't reject on server errors
         headers: {
           "User-Agent": "Student-Dashboard-Backend/1.0.0",
           Accept: "application/json",
           "Accept-Encoding": "gzip, deflate, br",
+          Connection: "keep-alive",
+          "Cache-Control": "no-cache",
         },
-      } as CustomAxiosRequestConfig
+      }
     );
 
-    // Send back data to client
-    res.json(response.data);
-  } catch (error: any) {
-    console.error("Error fetching student:", error);
+    console.log("External API response received:", response.status);
 
-    // More specific error handling
-    if (error.code === "ETIMEDOUT" || error.code === "ENETUNREACH") {
-      res.status(504).json({
+    // Send back the data exactly as received from external API
+    return res.status(response.status).json(response.data);
+  } catch (error: any) {
+    console.error("Error in StudentDetailsController:", {
+      name: error.name,
+      code: error.code,
+      message: error.message,
+      stack: error.stack,
+    });
+
+    // Detailed error analysis
+    if (error.code === "ECONNREFUSED") {
+      return res.status(503).json({
         success: false,
-        error: "external_service_timeout",
-        message:
-          "The student information service is currently unavailable. Please try again later.",
+        error: "connection_refused",
+        message: "The external service is not accepting connections",
+        details: "Check if the external API server is running and accessible",
+      });
+    } else if (error.code === "ETIMEDOUT") {
+      return res.status(504).json({
+        success: false,
+        error: "connection_timeout",
+        message: "The external service took too long to respond",
+        details: "The API server might be overloaded or network issues exist",
+      });
+    } else if (error.code === "ENOTFOUND") {
+      return res.status(502).json({
+        success: false,
+        error: "dns_resolution_failed",
+        message: "Could not resolve the external service hostname",
+        details: "Check the API URL and DNS configuration",
       });
     } else if (error.response) {
-      // The request was made and the server responded with a status code
-      res.status(error.response.status).json({
+      // External API responded with error status
+      return res.status(error.response.status).json({
         success: false,
         error: "external_api_error",
         message: "External API returned an error",
+        status: error.response.status,
         data: error.response.data,
       });
     } else if (error.request) {
-      // The request was made but no response was received
-      res.status(503).json({
+      // Request was made but no response received
+      return res.status(502).json({
         success: false,
-        error: "service_unavailable",
-        message:
-          "Could not connect to student information service. Please check your network connection.",
+        error: "no_response",
+        message: "No response received from external service",
+        details: "Network connectivity issue between servers",
       });
     } else {
-      res.status(500).json({
+      // Other errors
+      return res.status(500).json({
         success: false,
-        error: "internal_server_error",
-        message: "Failed to fetch student information",
+        error: "internal_error",
+        message: "Unexpected error occurred",
+        details: error.message,
       });
     }
+  }
+};
+
+// Add diagnostic endpoint
+const DiagnosticController = async (req: Request, res: Response) => {
+  try {
+    const API_BASE_URL =
+      process.env.ERP_API_URL || "https://erp.mrgroupofcolleges.co.in";
+
+    const results = {
+      timestamp: new Date().toISOString(),
+      render_service: "student-dashboard-backend-microservice",
+      external_api: API_BASE_URL,
+      status: "testing",
+    };
+
+    // Test basic connectivity
+    try {
+      const response = await axios.get(API_BASE_URL, {
+        timeout: 10000,
+        headers: { "User-Agent": "Diagnostic-Tool/1.0.0" },
+      });
+      results.status = "connected";
+      results["response_status"] = response.status;
+    } catch (testError: any) {
+      results.status = "failed";
+      results["error"] = {
+        code: testError.code,
+        message: testError.message,
+      };
+    }
+
+    res.json(results);
+  } catch (error: any) {
+    res.status(500).json({
+      error: "diagnostic_failed",
+      message: error.message,
+    });
   }
 };
 
@@ -190,4 +251,5 @@ export {
   RegisterStudentController,
   LoginStudentController,
   StudentDetailsController,
+  DiagnosticController,
 };
