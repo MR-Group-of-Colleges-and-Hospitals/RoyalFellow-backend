@@ -32,9 +32,27 @@ const RegisterStudentController = async (req: Request, res: Response) => {
         new SuccessResponse("Student registered successfully", 201, student)
       );
   } catch (err: any) {
+    console.error("Error in RegisterStudentController:", err);
+
+    let statusCode = 400;
+    if (
+      err.message.includes("network") ||
+      err.message.includes("timeout") ||
+      err.message.includes("connect")
+    ) {
+      statusCode = 503; // Service Unavailable
+    } else if (
+      err.message.includes("not found") ||
+      err.message.includes("does not exist")
+    ) {
+      statusCode = 404; // Not Found
+    }
+
     return res
-      .status(500)
-      .json(new SuccessResponse(err.message || "Registration failed", 400));
+      .status(statusCode)
+      .json(
+        new SuccessResponse(err.message || "Registration failed", statusCode)
+      );
   }
 };
 

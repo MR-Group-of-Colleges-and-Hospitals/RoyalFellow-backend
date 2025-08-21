@@ -12,9 +12,37 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
 
   try {
     const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
-    const { data: erpResponse } = await axios.get(apiUrl);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    console.log(`Fetching student data from: ${apiUrl}`);
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    // Check if response is OK
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Student not found in ERP system.");
+      }
+      throw new Error(
+        `ERP API returned status: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const erpResponse = await response.json();
 
     console.warn(erpResponse, "lelel");
+
     if (!erpResponse.status) {
       throw new Error("Student not found in ERP system.");
     }
@@ -33,15 +61,31 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
 
     return newUser.toObject();
   } catch (error: any) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
+    console.error("Error in _registerStudent:", error);
+
+    // Handle specific fetch errors
+    if (error.name === "AbortError") {
+      throw new Error("Request to ERP system timed out. Please try again.");
+    }
+
+    if (error.name === "TypeError") {
+      if (
+        error.message.includes("fetch") ||
+        error.message.includes("network")
+      ) {
+        throw new Error(
+          "Network error: Unable to connect to ERP system. Please check your connection."
+        );
+      }
+    }
+
+    if (error.message.includes("not found") || error.message.includes("404")) {
       throw new Error("Student does not exist in our records!");
     }
-    console.log(error);
 
-    throw new Error(error.message);
+    throw new Error(error.message || "Registration failed");
   }
 };
-
 const _loginForStudent = async (loginDto: LoginDto) => {
   const { email, password, phone_number } = loginDto;
 
