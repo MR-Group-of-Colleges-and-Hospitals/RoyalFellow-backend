@@ -27,6 +27,8 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
       signal: controller.signal,
     });
 
+    // console.log(response.status, "response");
+
     clearTimeout(timeoutId);
 
     // Check if response is OK
@@ -41,9 +43,9 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
 
     const erpResponse = await response.json();
 
-    console.warn(erpResponse, "lelel");
+    console.warn(erpResponse.status, "lelel");
 
-    if (!erpResponse.status) {
+    if (erpResponse.status == false) {
       throw new Error("Student not found in ERP system.");
     }
 
@@ -120,5 +122,8 @@ const _loginForStudent = async (loginDto: LoginDto) => {
     };
   }
 };
+
+
+
 
 export { _registerStudent, _loginForStudent };

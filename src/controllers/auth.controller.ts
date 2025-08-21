@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { _loginForStudent, _registerStudent } from "../services/auth.service";
 
 import SuccessResponse from "../middlewares/success.middleware";
+import axios from "axios";
 
 interface LoginDto {
   email: string;
@@ -91,4 +92,25 @@ const LoginStudentController = async (req: Request, res: Response) => {
   }
 };
 
-export { RegisterStudentController, LoginStudentController };
+const StudentDetailsController = async (req: Request, res: Response) => {
+  try {
+    const { mobile } = req.params;
+
+    // Call Laravel API
+    const response = await axios.get(
+      `https://erp.mrgroupofcolleges.co.in/api/get-student/${mobile}`
+    );
+
+    // Send back data to client
+    res.json(response.data);
+  } catch (error: any) {
+    console.error("Error fetching student:", error.message);
+    res.status(500).json({ error: "Failed to fetch student" });
+  }
+};
+
+export {
+  RegisterStudentController,
+  LoginStudentController,
+  StudentDetailsController,
+};
