@@ -104,7 +104,7 @@ const StudentDetailsController = async (req: Request, res: Response) => {
     // Send back data to client
     res.json(response.data);
   } catch (error: any) {
-    console.error("Error fetching student:", error.message);
+    console.error("Error fetching student:", error);
     res.status(500).json({ error: "Failed to fetch student" });
   }
 };
