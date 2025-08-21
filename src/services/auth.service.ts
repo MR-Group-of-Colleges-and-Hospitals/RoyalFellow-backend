@@ -14,6 +14,7 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
     const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
     const { data: erpResponse } = await axios.get(apiUrl);
 
+    console.warn(erpResponse, "lelel");
     if (!erpResponse.status) {
       throw new Error("Student not found in ERP system.");
     }
