@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { _loginForStudent, _registerStudent } from "../services/auth.service";
+import { _loginForStudent, _registerStudent, _forgotPasswordService, _resetPasswordService } from "../services/auth.service";
 import SuccessResponse from "../middlewares/success.middleware";
 import axios, { AxiosError } from "axios";
 
@@ -9,7 +9,7 @@ interface LoginDto {
   phone_number: string;
 }
 
-// Create custom axios instance with better configuration
+
 
 const RegisterStudentController = async (req: Request, res: Response) => {
   try {
@@ -94,8 +94,33 @@ const LoginStudentController = async (req: Request, res: Response) => {
 };
 
 
+const ForgotPasswordController = async (req: Request, res: Response) => {
+  const { emailOrPhone } = req.body;
+
+  try {
+    const message = await _forgotPasswordService(emailOrPhone);
+    return res.status(200).json(new SuccessResponse(message, 200));
+  } catch (err: any) {
+    return res.status(400).json(new SuccessResponse(err.message, 400));
+  }
+}
+
+
+const ResetPasswordController = async (req: any, res: any) => {
+  const { otp, newPassword } = req.body;
+
+  try {
+    const message = await _resetPasswordService(otp, newPassword);
+    return res.status(200).json(new SuccessResponse(message, 200));
+  } catch (err: any) {
+    return res.status(400).json(new SuccessResponse(err.message, 400));
+  }
+};
+
+
 export {
   RegisterStudentController,
   LoginStudentController,
-
+ForgotPasswordController,
+ResetPasswordController
 };
