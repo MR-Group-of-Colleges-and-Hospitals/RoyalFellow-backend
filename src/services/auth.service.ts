@@ -111,7 +111,7 @@ const _loginForStudent = async (loginDto: LoginDto) => {
       throw new Error("Invalid password");
     }
 
-   const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${user.phone_number}`;
+   const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
    const { data: erpResponse } = await axios.get(apiUrl);
 
    console.log("ERP raw response:", erpResponse);
