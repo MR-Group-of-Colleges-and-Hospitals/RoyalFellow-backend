@@ -117,6 +117,8 @@ const _loginForStudent = async (loginDto: LoginDto) => {
       throw new Error("Student not found in ERP system");
     }
 
+    console.log(erpResponse, "erpResponse");
+
     const token = generateAccessToken(user._id);
 
     return {
