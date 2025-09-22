@@ -122,6 +122,7 @@ const _loginForStudent = async (loginDto: LoginDto) => {
     const token = generateAccessToken(user._id);
 
     return {
+      success: true,
       token,
       student: erpResponse.data,
     };

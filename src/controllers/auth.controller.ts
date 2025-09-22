@@ -74,12 +74,13 @@ const LoginStudentController = async (req: Request, res: Response) => {
       phone_number,
     });
 
-    if (!loginResult || loginResult.success === false) {
+    if (!loginResult || !loginResult.success) {
       return res
         .status(401)
-        .json(new SuccessResponse(loginResult.message || "Login failed", 401));
+        .json(new SuccessResponse(loginResult?.message || "Login failed", 401));
     }
 
+    // If we reach here, login was successful
     return res.status(200).json(
       new SuccessResponse("Login successful", 200, {
         token: loginResult.token,
