@@ -101,6 +101,7 @@ const _loginForStudent = async (loginDto: LoginDto) => {
 
   try {
     const user = await User.findOne({ email });
+    console.log("fuck user", user);
     if (!user) {
       throw new Error("User not found");
     }
