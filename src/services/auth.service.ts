@@ -105,7 +105,7 @@ const _loginForStudent = async (loginDto: LoginDto) => {
       throw new Error("User not found");
     }
 
-    const isMatch = await bcrypt.compare(password.trim(), user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       throw new Error("Invalid password");
     }
