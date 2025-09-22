@@ -111,14 +111,16 @@ const _loginForStudent = async (loginDto: LoginDto) => {
       throw new Error("Invalid password");
     }
 
-    const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
-    const { data: erpResponse } = await axios.get(apiUrl);
+   const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${user.phone_number}`;
+   const { data: erpResponse } = await axios.get(apiUrl);
 
-    if (!erpResponse?.status) {
-      throw new Error("Student not found in ERP system");
-    }
+   console.log("ERP raw response:", erpResponse);
 
-    console.log(erpResponse, "erpResponse");
+   if (!erpResponse?.status) {
+     throw new Error("Student not found in ERP system");
+   }
+
+    
 
     const token = generateAccessToken(user._id);
 
