@@ -138,7 +138,7 @@ const _loginForStudent = async (loginDto: LoginDto) => {
 const _studentDetailsService = async (mobile_number: string) => {
   const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${mobile_number}`;
   try {
-    const { data: erpResponse } = await axios.get(apiUrl);
+    const { data: erpResponse } = await axios.get(apiUrl, { timeout: 15000 });
     console.log(erpResponse.status, "statuse of erp response");
     console.log(erpResponse.data, "data of erp response");
     if (!erpResponse?.status) {
@@ -152,6 +152,11 @@ const _studentDetailsService = async (mobile_number: string) => {
     );
   }
 };
+
+
+
+
+
 
 const _forgotPasswordService = async (
   emailOrPhone: string
