@@ -144,6 +144,7 @@ const _studentDetailsService = async (mobile_number: string) => {
     }
     return erpResponse.data;
   } catch (error: any) {
+    console.log("Error in _studentDetailsService:", error);
     throw new Error(
       error.message || "Failed to fetch student details from ERP"
     );

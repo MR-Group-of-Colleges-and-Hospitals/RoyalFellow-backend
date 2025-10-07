@@ -117,6 +117,7 @@ const StudentDetailsController = async (req: any, res: any) => {
         )
       );
   } catch (err: any) {
+    console.log("Error in StudentDetailsController:", err);
     return res
       .status(500)
       .json(new SuccessResponse(err.message || "Internal server error", 500));
