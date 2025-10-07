@@ -1,5 +1,11 @@
 import { Request, Response } from "express";
-import { _loginForStudent, _registerStudent, _forgotPasswordService, _resetPasswordService } from "../services/auth.service";
+import {
+  _loginForStudent,
+  _registerStudent,
+  _forgotPasswordService,
+  _resetPasswordService,
+  _studentDetailsService,
+} from "../services/auth.service";
 import SuccessResponse from "../middlewares/success.middleware";
 import axios, { AxiosError } from "axios";
 
@@ -8,8 +14,6 @@ interface LoginDto {
   password: string;
   phone_number: string;
 }
-
-
 
 const RegisterStudentController = async (req: Request, res: Response) => {
   try {
@@ -94,6 +98,30 @@ const LoginStudentController = async (req: Request, res: Response) => {
   }
 };
 
+const StudentDetailsController = async (req: any, res: any) => {
+  try {
+    const mobile_number = req.body.mobile_number;
+    if (!mobile_number) {
+      return res
+        .status(400)
+        .json(new SuccessResponse("Missing mobile number", 400));
+    }
+    const studentDetails = await _studentDetailsService(mobile_number);
+    return res
+      .status(200)
+      .json(
+        new SuccessResponse(
+          "Student details fetched successfully",
+          200,
+          studentDetails
+        )
+      );
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json(new SuccessResponse(err.message || "Internal server error", 500));
+  }
+};
 
 const ForgotPasswordController = async (req: Request, res: Response) => {
   const { emailOrPhone } = req.body;
@@ -104,8 +132,7 @@ const ForgotPasswordController = async (req: Request, res: Response) => {
   } catch (err: any) {
     return res.status(400).json(new SuccessResponse(err.message, 400));
   }
-}
-
+};
 
 const ResetPasswordController = async (req: any, res: any) => {
   const { otp, newPassword } = req.body;
@@ -118,10 +145,10 @@ const ResetPasswordController = async (req: any, res: any) => {
   }
 };
 
-
 export {
   RegisterStudentController,
   LoginStudentController,
-ForgotPasswordController,
-ResetPasswordController
+  ForgotPasswordController,
+  ResetPasswordController,
+  StudentDetailsController,
 };

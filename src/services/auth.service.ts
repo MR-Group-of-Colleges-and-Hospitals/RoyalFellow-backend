@@ -101,7 +101,7 @@ const _loginForStudent = async (loginDto: LoginDto) => {
 
   try {
     const user = await User.findOne({ email });
-    console.log("fuck user", user);
+    console.log("user object in my mongodb", user);
     if (!user) {
       throw new Error("User not found");
     }
@@ -111,16 +111,14 @@ const _loginForStudent = async (loginDto: LoginDto) => {
       throw new Error("Invalid password");
     }
 
-   const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
-   const { data: erpResponse } = await axios.get(apiUrl);
+    const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
+    const { data: erpResponse } = await axios.get(apiUrl);
 
-   console.log("ERP raw response:", erpResponse);
+    console.log("Rajesh ERP raw response:", erpResponse);
 
-   if (!erpResponse?.status) {
-     throw new Error("Student not found in ERP system");
-   }
-
-    
+    if (!erpResponse?.status) {
+      throw new Error("Student not found in ERP system");
+    }
 
     const token = generateAccessToken(user._id);
 
@@ -137,6 +135,20 @@ const _loginForStudent = async (loginDto: LoginDto) => {
   }
 };
 
+const _studentDetailsService = async (mobile_number: string) => {
+  const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${mobile_number}`;
+  try {
+    const { data: erpResponse } = await axios.get(apiUrl);
+    if (!erpResponse?.status) {
+      throw new Error("Student not found in ERP system");
+    }
+    return erpResponse.data;
+  } catch (error: any) {
+    throw new Error(
+      error.message || "Failed to fetch student details from ERP"
+    );
+  }
+};
 
 const _forgotPasswordService = async (
   emailOrPhone: string
@@ -153,7 +165,6 @@ const _forgotPasswordService = async (
 
   const otp = generateOTP();
   const expiration = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
-
 
   await User.findByIdAndUpdate(
     user._id,
@@ -186,7 +197,6 @@ const _forgotPasswordService = async (
 
   return "OTP sent successfully.";
 };
-
 
 const _resetPasswordService = async (
   otp: string,
@@ -224,6 +234,10 @@ const _resetPasswordService = async (
   return "Password reset successfully.";
 };
 
-
-
-export { _registerStudent, _loginForStudent, _forgotPasswordService, _resetPasswordService };
+export {
+  _registerStudent,
+  _loginForStudent,
+  _forgotPasswordService,
+  _resetPasswordService,
+  _studentDetailsService,
+};
