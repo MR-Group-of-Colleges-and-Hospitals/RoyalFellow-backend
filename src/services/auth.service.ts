@@ -139,6 +139,8 @@ const _studentDetailsService = async (mobile_number: string) => {
   const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${mobile_number}`;
   try {
     const { data: erpResponse } = await axios.get(apiUrl);
+    console.log(erpResponse.status, "statuse of erp response");
+    console.log(erpResponse.data, "data of erp response");
     if (!erpResponse?.status) {
       throw new Error("Student not found in ERP system");
     }
