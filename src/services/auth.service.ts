@@ -128,6 +128,8 @@ const _loginForStudent = async (loginDto: LoginDto) => {
       student: erpResponse.data,
     };
   } catch (error: any) {
+
+    console.error("Error in _loginForStudent:", error);
     return {
       success: false,
       message: error.message || "Login failed",
