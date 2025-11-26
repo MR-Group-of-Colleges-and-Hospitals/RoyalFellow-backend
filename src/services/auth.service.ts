@@ -22,6 +22,8 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
 
 
     const existingUser = await User.findOne({ phone_number });
+
+
     if (existingUser) {
       throw new Error("Student already registered.");
     }
@@ -64,8 +66,8 @@ const _loginForStudent = async (loginDto: LoginDto) => {
   const { email, password, phone_number } = loginDto;
 
   try {
-    const user = await User.findOne({ email });
-    console.log("user object in my mongodb", user);
+    const user = await User.findOne({ email, phone_number });
+    
     if (!user) {
       throw new Error("User not found");
     }
