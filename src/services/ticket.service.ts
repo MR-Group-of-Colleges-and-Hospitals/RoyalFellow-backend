@@ -13,6 +13,8 @@ const _createTicketService = async (data: Partial<TicketDto>) => {
         throw new Error("Student not found");
     };
 
+    console.log(student, 'student found in ticket service');
+
     const payload: Partial<TicketDto> = {
         title: data.title || "",
         subject: subjectId,
@@ -24,15 +26,19 @@ const _createTicketService = async (data: Partial<TicketDto>) => {
         meta: data.meta || {},
     };
 
+    console.log(payload, 'payload for ticket creation');
+
     const newTicket = await Ticket.create(payload);
-    await sendTicketCreationEmail({
-        to: payload.allowed_email!,
-        subject: payload.subject!,
-        title: payload.title!,
-        description: payload.description!,
-        // remarks: payload.remarks,
-        studentName: data.meta?.studentName || "",
-    });
+
+    console.log(newTicket, 'new ticket created');
+    // await sendTicketCreationEmail({
+    //     to: payload.allowed_email!,
+    //     subject: payload.subject!,
+    //     title: payload.title!,
+    //     description: payload.description!,
+    //     // remarks: payload.remarks,
+    //     studentName: data.meta?.studentName || "",
+    // });
     return newTicket;
 };
 

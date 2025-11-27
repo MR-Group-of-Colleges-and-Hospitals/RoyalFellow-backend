@@ -15,6 +15,9 @@ const CreateTicketController = async (req: any, res: any) => {
 
 
         const ticket = await _createTicketService(req.body);
+
+        console.log(req.body, 'request ody')
+        console.log(ticket, 'ticket created!')
         return res
             .status(201)
             .json(new SuccessResponse("Ticket created successfully", 201, ticket));
@@ -34,6 +37,8 @@ const FetchTicketsController = async (req: any, res: any) => {
         const {
             student_name
         } = req.body;
+
+
         const tickets = await _fetchTicketsByStudentService(student_name, page, limit);
         return res
             .status(200)
