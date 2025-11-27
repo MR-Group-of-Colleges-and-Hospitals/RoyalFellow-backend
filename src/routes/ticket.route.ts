@@ -1,4 +1,4 @@
-import { CreateTicketController, FetchTicketsController } from "../controllers/ticket.controller";
+import { CreateTicketController, FetchTicketDetailsController, FetchTicketsController } from "../controllers/ticket.controller";
 
 
 import express from "express";
@@ -13,6 +13,12 @@ ticketRouter.post(
     FetchTicketsController
 );
 
+
+
+ticketRouter.get(
+    "/details/:ticketId",
+    FetchTicketDetailsController
+);
 
 
 

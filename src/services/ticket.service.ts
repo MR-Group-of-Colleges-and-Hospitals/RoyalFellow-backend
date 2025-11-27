@@ -12,9 +12,6 @@ const _createTicketService = async (data: Partial<TicketDto>) => {
     if (!student) {
         throw new Error("Student not found");
     };
-
-    console.log(student, 'student found in ticket service');
-
     const payload: Partial<TicketDto> = {
         title: data.title || "",
         subject: subjectId,
@@ -25,20 +22,15 @@ const _createTicketService = async (data: Partial<TicketDto>) => {
         status: TicketStatus.PENDING,
         meta: data.meta || {},
     };
-
-    console.log(payload, 'payload for ticket creation');
-
     const newTicket = await Ticket.create(payload);
-
-    console.log(newTicket, 'new ticket created');
-    // await sendTicketCreationEmail({
-    //     to: payload.allowed_email!,
-    //     subject: payload.subject!,
-    //     title: payload.title!,
-    //     description: payload.description!,
-    //     // remarks: payload.remarks,
-    //     studentName: data.meta?.studentName || "",
-    // });
+    await sendTicketCreationEmail({
+        to: payload.allowed_email!,
+        subject: payload.subject!,
+        title: payload.title!,
+        description: payload.description!,
+        // remarks: payload.remarks,
+        studentName: data.meta?.studentName || "",
+    });
     return newTicket;
 };
 
@@ -85,4 +77,12 @@ const _fetchTicketsByStudentService = async (studentName: string, page: number =
 
 
 
-export { _createTicketService, _fetchTicketsByStudentService };
+const _fetchTicketDetailsService = async (ticketId: Types.ObjectId) => {
+
+    const ticket = await Ticket.findById(ticketId).populate('student', 'name email');
+    return ticket;
+}
+
+
+
+export { _createTicketService, _fetchTicketsByStudentService, _fetchTicketDetailsService };
