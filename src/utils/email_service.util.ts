@@ -33,11 +33,13 @@ const sendEmail = async (
 
   const transporter = nodemailer.createTransport({
     host: smtpHost,
+    secure: true,
     port: parseInt(smtpPort, 10),
     auth: {
       user: emailUser,
       pass: emailPass,
     },
+    tls: { rejectUnauthorized: false }
   });
 
   const mailOptions = {
@@ -76,11 +78,13 @@ const sendEmailWithCC = async (
 
   const transporter = nodemailer.createTransport({
     host: smtpHost,
+    secure: true,
     port: parseInt(smtpPort, 10),
     auth: {
       user: emailUser,
       pass: emailPass,
     },
+    tls: { rejectUnauthorized: false }
   });
 
   const mailOptions = {
