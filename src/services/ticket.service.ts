@@ -38,4 +38,45 @@ const _createTicketService = async (data: Partial<TicketDto>) => {
 
 
 
-export { _createTicketService };
+const _fetchTicketsByStudentService = async (studentName: string, page: number = 1, limit: number = 10) => {
+
+    const skip = (page - 1) * limit;
+
+    const existingStudent = await User.findOne({
+        name: studentName
+    });
+    if (!existingStudent) {
+        throw new Error("Student not found");
+    }
+
+    const [tickets, total] = await Promise.all([
+        Ticket.find({
+            student: existingStudent?._id
+        }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        Ticket.countDocuments({
+            student: existingStudent?._id
+        }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    return {
+        tickets,
+        pagination: {
+            totalItems: total,
+            totalPages,
+            currentPage: page,
+            limit,
+            hasNextPage,
+            hasPrevPage,
+        },
+    };
+
+
+}
+
+
+
+export { _createTicketService, _fetchTicketsByStudentService };
