@@ -20,10 +20,17 @@ const ticketSchema = new Schema<TicketDto & Document>(
             enum: Object.values(TicketStatus),
             default: TicketStatus.PENDING,
         },
-        remarks: {
-            type: String,
-            default: "",
-        },
+        remarks: [
+            {
+                title: { 
+                    type: String, 
+                    default: "" 
+                },
+                subject: { type: String, default: "" },
+                description: { type: String, default: "" },
+                createdAt: { type: Date, default: Date.now }
+            }
+        ],
         allowed_email: {
             type: String,
             required: true,

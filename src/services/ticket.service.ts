@@ -17,7 +17,7 @@ const _createTicketService = async (data: Partial<TicketDto>) => {
         title: data.title || "",
         subject: subjectId,
         description: data.description || "",
-        remarks: data.remarks || "",
+        // remarks: data.remarks || "",
         allowed_email: data.allowed_email!,
         student: student._id as Types.ObjectId,
         status: TicketStatus.PENDING,
@@ -30,7 +30,7 @@ const _createTicketService = async (data: Partial<TicketDto>) => {
         subject: payload.subject!,
         title: payload.title!,
         description: payload.description!,
-        remarks: payload.remarks,
+        // remarks: payload.remarks,
         studentName: data.meta?.studentName || "",
     });
     return newTicket;
