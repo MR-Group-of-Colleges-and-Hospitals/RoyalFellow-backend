@@ -15,6 +15,7 @@ const userSchema = new Schema<UserDto & Document>(
     },
     email: {
       type: String,
+      default: ""
     },
     // email_verification_otp: {
     //   type: String,

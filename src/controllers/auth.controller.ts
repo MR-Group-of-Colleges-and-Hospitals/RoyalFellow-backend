@@ -19,7 +19,7 @@ const RegisterStudentController = async (req: Request, res: Response) => {
   try {
     const { name, email, password, phone_number } = req.body;
 
-    if (!name || !email || !password || !phone_number) {
+    if (!name || !password || !phone_number) {
       return res
         .status(400)
         .json(new SuccessResponse("Missing required fields", 400));
