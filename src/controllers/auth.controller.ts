@@ -64,16 +64,15 @@ const RegisterStudentController = async (req: Request, res: Response) => {
 
 const LoginStudentController = async (req: Request, res: Response) => {
   try {
-    const { email, password, phone_number } = req.body as LoginDto;
+    const { password, phone_number } = req.body as LoginDto;
 
-    if (!email || !password || !phone_number) {
+    if (!password || !phone_number) {
       return res
         .status(400)
         .json(new SuccessResponse("Missing required fields", 400));
     }
 
     const loginResult = await _loginForStudent({
-      email,
       password,
       phone_number,
     });

@@ -62,30 +62,61 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
     throw new Error(error.message || "Registration failed");
   }
 };
-const _loginForStudent = async (loginDto: LoginDto) => {
-  const { email, password, phone_number } = loginDto;
+
+
+const _loginForStudent = async (loginDto: Partial<LoginDto>) => {
+  const { password, phone_number } = loginDto;
 
   try {
-    const user = await User.findOne({ email, phone_number });
-    
-    if (!user) {
-      throw new Error("User not found");
+    if (!password) throw new Error("Password is required");
+
+    // Fetch user
+    const user = await User.findOne({ phone_number });
+    if (!user) throw new Error("User not found");
+    if (!user.password) throw new Error("User password not found");
+
+    let hashedPassword = user.password;
+    let isMatch = false;
+
+    // CASE 1: Laravel style hash ($2y$)
+    if (hashedPassword.startsWith("$2y$")) {
+
+      const convertedHash = "$2b$" + hashedPassword.substring(4);
+      console.log("Converted Laravel hash →", convertedHash);
+
+      // Compare using converted hash
+      isMatch = await bcrypt.compare(password, convertedHash);
+
+      // If Laravel hash matches → migrate to Node bcrypt version
+      if (isMatch) {
+        const newNodeHashedPassword = await bcrypt.hash(password, 10);
+
+        await User.updateOne(
+          { _id: user._id },
+          { password: newNodeHashedPassword }
+        );
+
+        console.log("➡️ Password migrated to Node bcrypt:", newNodeHashedPassword);
+
+        // Use new hash for login
+        hashedPassword = newNodeHashedPassword;
+      }
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      throw new Error("Invalid password");
+    // CASE 2: Already Node.js bcrypt hash ($2b$)
+    else {
+      isMatch = await bcrypt.compare(password, hashedPassword);
     }
 
+    if (!isMatch) throw new Error("Invalid password");
+
+    // ERP STUDENT DETAILS
     const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
     const { data: erpResponse } = await axios.get(apiUrl);
 
-    console.log("Rajesh ERP raw response:", erpResponse);
+    if (!erpResponse?.status) throw new Error("Student not found in ERP");
 
-    if (!erpResponse?.status) {
-      throw new Error("Student not found in ERP system");
-    }
-
+    // JWT TOKEN
     const token = generateAccessToken(user._id);
 
     return {
@@ -93,15 +124,13 @@ const _loginForStudent = async (loginDto: LoginDto) => {
       token,
       student: erpResponse.data,
     };
-  } catch (error: any) {
 
-    console.error("Error in _loginForStudent:", error);
-    return {
-      success: false,
-      message: error.message || "Login failed",
-    };
+  } catch (error: any) {
+    console.error("Login error:", error);
+    return { success: false, message: error.message };
   }
 };
+
 
 const _studentDetailsService = async (mobile_number: string) => {
   const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${mobile_number}`;
