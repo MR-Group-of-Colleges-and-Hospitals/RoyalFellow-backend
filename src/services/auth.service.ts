@@ -38,27 +38,6 @@ const _registerStudent = async (userDto: UserDto): Promise<UserDto> => {
     return newUser.toObject();
   } catch (error: any) {
     console.error("Error in _registerStudent:", error);
-
-
-    if (error.name === "AbortError") {
-      throw new Error("Request to ERP system timed out. Please try again.");
-    }
-
-    if (error.name === "TypeError") {
-      if (
-        error.message.includes("fetch") ||
-        error.message.includes("network")
-      ) {
-        throw new Error(
-          "Network error: Unable to connect to ERP system. Please check your connection."
-        );
-      }
-    }
-
-    if (error.message.includes("not found") || error.message.includes("404")) {
-      throw new Error("Student does not exist in our records!");
-    }
-
     throw new Error(error.message || "Registration failed");
   }
 };
@@ -70,51 +49,23 @@ const _loginForStudent = async (loginDto: Partial<LoginDto>) => {
   try {
     if (!password) throw new Error("Password is required");
 
-    // Fetch user
+
     const user = await User.findOne({ phone_number });
     if (!user) throw new Error("User not found");
     if (!user.password) throw new Error("User password not found");
 
-    let hashedPassword = user.password;
+
     let isMatch = false;
+    isMatch = await bcrypt.compare(password, user.password);
 
-    // CASE 1: Laravel style hash ($2y$)
-    if (hashedPassword.startsWith("$2y$")) {
-
-      const convertedHash = "$2b$" + hashedPassword.substring(4);
-      console.log("Converted Laravel hash →", convertedHash);
-
-      // Compare using converted hash
-      isMatch = await bcrypt.compare(password, convertedHash);
-
-      // If Laravel hash matches → migrate to Node bcrypt version
-      if (isMatch) {
-        const newNodeHashedPassword = await bcrypt.hash(password, 10);
-
-        await User.updateOne(
-          { _id: user._id },
-          { password: newNodeHashedPassword }
-        );
-
-        console.log("➡️ Password migrated to Node bcrypt:", newNodeHashedPassword);
-
-        // Use new hash for login
-        hashedPassword = newNodeHashedPassword;
-      }
-    }
-
-    // CASE 2: Already Node.js bcrypt hash ($2b$)
-    else {
-      isMatch = await bcrypt.compare(password, hashedPassword);
-    }
 
     if (!isMatch) throw new Error("Invalid password");
 
-    // ERP STUDENT DETAILS
-    const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
-    const { data: erpResponse } = await axios.get(apiUrl);
 
-    if (!erpResponse?.status) throw new Error("Student not found in ERP");
+    // const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${phone_number}`;
+    // const { data: erpResponse } = await axios.get(apiUrl);
+
+    // if (!erpResponse?.status) throw new Error("Student not found in ERP");
 
     // JWT TOKEN
     const token = generateAccessToken(user._id);
@@ -122,7 +73,7 @@ const _loginForStudent = async (loginDto: Partial<LoginDto>) => {
     return {
       success: true,
       token,
-      student: erpResponse.data,
+      student: user,
     };
 
   } catch (error: any) {
@@ -136,8 +87,7 @@ const _studentDetailsService = async (mobile_number: string) => {
   const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${mobile_number}`;
   try {
     const { data: erpResponse } = await axios.get(apiUrl, { timeout: 15000 });
-    console.log(erpResponse.status, "statuse of erp response");
-    console.log(erpResponse.data, "data of erp response");
+
     if (!erpResponse?.status) {
       throw new Error("Student not found in ERP system");
     }

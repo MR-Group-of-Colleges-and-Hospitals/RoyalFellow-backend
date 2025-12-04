@@ -112,7 +112,7 @@ const StudentDetailsController = async (req: any, res: any) => {
         new SuccessResponse(
           "Student details fetched successfully",
           200,
-          studentDetails
+          { student: studentDetails }
         )
       );
   } catch (err: any) {
