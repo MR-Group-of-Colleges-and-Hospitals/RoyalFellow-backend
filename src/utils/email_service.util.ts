@@ -23,7 +23,7 @@ const sendEmail = async (
   const emailPass = process.env.EMAIL_PASSWORD;
 
 
-  
+
 
   if (!smtpHost || !smtpPort || !emailUser || !emailPass) {
     throw new Error(
@@ -78,7 +78,7 @@ const sendEmailWithCC = async (
 
   const transporter = nodemailer.createTransport({
     host: smtpHost,
-    secure: true,
+    secure: false,
     port: parseInt(smtpPort, 10),
     auth: {
       user: emailUser,
@@ -108,9 +108,9 @@ const sendEmailWithCC = async (
 
 
 interface TicketEmailPayload {
-  to: string;              // allowed_email selected by student
-  subject: string;         // e.g. _0001
-  studentName?: string;    // optional
+  to: string;
+  subject: string;
+  studentName?: string;
   title: string;
   description: string;
   remarks?: string;
