@@ -128,7 +128,7 @@ const sendTicketCreationEmail = async (data: TicketEmailPayload) => {
 
     const fromName = process.env.TICKET_FROM_NAME || "Support Desk";
 
-    const emailSubject = `New Ticket ${data.subject} - ${data.title}`;
+    const emailSubject = `[MR-TICKET:${data.subject}] ${data.title}`;
 
     // HTML VERSION
     const html = `
