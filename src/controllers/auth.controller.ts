@@ -5,6 +5,7 @@ import {
   _forgotPasswordService,
   _resetPasswordService,
   _studentDetailsService,
+  _studentProfileService,
 } from "../services/auth.service";
 import SuccessResponse from "../middlewares/success.middleware";
 import axios, { AxiosError } from "axios";
@@ -145,10 +146,33 @@ const ResetPasswordController = async (req: any, res: any) => {
   }
 };
 
+
+const StudentProfileController = async (req: any, res: any) => {
+  try {
+    const {
+      studentId
+    } = req.params;
+
+    const student = await _studentProfileService(studentId);
+    return res
+      .status(200)
+      .json(
+        new SuccessResponse("Student profile fetched successfully", 200,
+          student,
+        )
+      );
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json(new SuccessResponse(err.message || "Internal server error", 500));
+  }
+}
+
 export {
   RegisterStudentController,
   LoginStudentController,
   ForgotPasswordController,
   ResetPasswordController,
   StudentDetailsController,
+  StudentProfileController
 };
