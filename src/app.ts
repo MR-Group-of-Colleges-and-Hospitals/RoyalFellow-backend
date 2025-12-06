@@ -5,6 +5,7 @@ dotenv.config();
 import cors from "cors";
 import { connect, getDbStatus } from "../config/db.config";
 import mainRouter from "./routes";
+import { startEmailReplyListener } from "./utils/email_service.util";
 
 import dns from "dns";
 dns.setDefaultResultOrder("ipv4first");
@@ -51,6 +52,9 @@ app.listen(PORT, async () => {
 
   console.log("Database connection established");
 });
+
+
+startEmailReplyListener();
 
 export enum MongoStatusEnums {
   CONNECTED = "Connected to mongodb",

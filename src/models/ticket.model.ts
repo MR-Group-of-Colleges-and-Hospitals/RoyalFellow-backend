@@ -22,6 +22,7 @@ const ticketSchema = new Schema<TicketDto & Document>(
         },
         remarks: [
             {
+                messageId: { type: String, required: false, index: true },
                 title: { 
                     type: String, 
                     default: "" 

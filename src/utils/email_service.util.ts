@@ -3,6 +3,11 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+
+import Imap from "imap-simple";
+import { simpleParser } from "mailparser";
+import Ticket from "../models/ticket.model";
+import { TicketStatus } from "../dtos/ticket.dto";
 /**
  * Sends an email using Nodemailer
  * @param to Recipient email address
@@ -126,7 +131,7 @@ const sendTicketCreationEmail = async (data: TicketEmailPayload) => {
       .map((e) => e.trim())
       .filter((e) => e.length > 0);
 
-    const fromName = process.env.TICKET_FROM_NAME || "Support Desk";
+    const fromName = process.env.TICKET_NAME || "Support Desk";
 
     const emailSubject = `[MR-TICKET:${data.subject}] ${data.title}`;
 
@@ -172,4 +177,131 @@ ${data.studentName ? `Student: ${data.studentName}` : ""}
     throw err;
   }
 };
-export { sendEmail, sendTicketCreationEmail };
+
+
+
+
+const config = {
+  imap: {
+    user: process.env.EMAIL_USERNAME,       // Gmail / Zoho mailbox
+    password: process.env.EMAIL_PASSWORD,
+    host: "imap.gmail.com",                 // For Zoho: imap.zoho.com
+    port: 993,
+    tls: true,
+    tlsOptions: { rejectUnauthorized: false }
+  }
+};
+
+
+const toImapDate = (date: Date) => {
+  const day = date.getDate();
+  const month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][date.getMonth()];
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
+const startEmailReplyListener = async () => {
+  try {
+    const connection = await Imap.connect(config);
+
+    await connection.openBox("[Gmail]/All Mail");
+
+    console.log("📥 Email Reply Listener Running...");
+
+    setInterval(async () => {
+      const sinceTime = new Date(Date.now() - 5 * 60 * 1000);
+      const imapSince = toImapDate(sinceTime);
+
+      // Only MR-TICKET mails since today (day precision), any flags (seen/unseen)
+      const messages = await connection.search(
+        [
+          ["SINCE", imapSince],
+          ["SUBJECT", "MR-TICKET:"],
+        ],
+        {
+          bodies: [""],
+          markSeen: true,
+        }
+      );
+
+      for (const message of messages) {
+        const all = message.parts.find((p) => p.which === "");
+        if (!all) continue;
+
+        const parsed = await simpleParser(all.body);
+
+        const subject = parsed.subject || "";
+        const from = parsed.from?.text || "";
+        const html = parsed.html || "";
+        const text = parsed.text || "";
+        const messageId = parsed.messageId || "";
+
+        console.log("📬 RAW SUBJECT:", subject);
+        console.log("🆔 Message-ID:", messageId);
+
+        // 1. Must have a messageId to dedupe
+        if (!messageId) {
+          console.log("⚠️ No Message-ID, skipping");
+          continue;
+        }
+        if (from.includes(process.env.EMAIL_USERNAME)) {
+          console.log("⛔ Ignored outbound system email");
+          continue;
+        }
+
+        // 2. Extract ticketId from subject
+        const match = subject.match(/\[MR-TICKET:([^\]]+)\]/);
+        if (!match) {
+          console.log("❌ No ticket ID found");
+          continue;
+        }
+
+        const ticketId = match[1].trim();
+        console.log("🎯 Extracted TicketId:", ticketId);
+
+        // 3. Check if this email was already processed
+        const already = await Ticket.findOne({
+          subject: ticketId,
+          "remarks.messageId": messageId,
+        });
+
+        if (already) {
+          console.log("⛔ Duplicate reply skipped:", messageId);
+          continue;
+        }
+
+        // 4. Find ticket
+        const ticket = await Ticket.findOne({ subject: ticketId });
+        console.log("🔍 DB Ticket Found:", ticket ? ticket._id : "NO");
+
+        if (!ticket) continue;
+
+        // 5. Add remark only once
+        await Ticket.findOneAndUpdate(
+          { subject: ticketId },
+          {
+            $push: {
+              remarks: {
+                messageId,                          // 🆕 so we can skip next time
+                title: `Reply from ${from}`,
+                subject,
+                description: html || text,
+                createdAt: new Date(),
+              },
+            },
+            status: TicketStatus.REPLY_GIVEN,
+          }
+        );
+
+        console.log(`✅ Ticket ${ticketId} updated`);
+      }
+    }, 8000);
+  } catch (err) {
+    console.error("❌ Email Reply Listener Error:", err);
+  }
+};
+
+
+
+
+export { sendEmail, sendTicketCreationEmail, startEmailReplyListener };

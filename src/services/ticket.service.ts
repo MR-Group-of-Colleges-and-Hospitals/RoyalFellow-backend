@@ -82,9 +82,11 @@ const _fetchTicketsByStudentService = async (studentName: string, page: number =
 
 const _fetchTicketDetailsService = async (ticketId: Types.ObjectId) => {
 
-    const ticket = await Ticket.findById(ticketId).populate('student', 'name email');
+    const ticket = await Ticket.findById(ticketId);
     return ticket;
 }
+
+
 
 
 
