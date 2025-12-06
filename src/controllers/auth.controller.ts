@@ -6,6 +6,7 @@ import {
   _resetPasswordService,
   _studentDetailsService,
   _studentProfileService,
+  _updateStudentEmailService,
 } from "../services/auth.service";
 import SuccessResponse from "../middlewares/success.middleware";
 import axios, { AxiosError } from "axios";
@@ -150,10 +151,10 @@ const ResetPasswordController = async (req: any, res: any) => {
 const StudentProfileController = async (req: any, res: any) => {
   try {
     const {
-      studentId
-    } = req.params;
+      student_name
+    } = req.body;
 
-    const student = await _studentProfileService(studentId);
+    const student = await _studentProfileService(student_name);
     return res
       .status(200)
       .json(
@@ -168,11 +169,38 @@ const StudentProfileController = async (req: any, res: any) => {
   }
 }
 
+
+const UpdateStudentEmailController = async (req: Request, res: Response) => {
+  try {
+    const { student_name, email } = req.body;
+
+    if (!student_name || !email) {
+      return res.status(400).json({
+        status: "FAILED",
+        message: "student_name and email are required",
+      });
+    }
+
+    const updatedStudent = await _updateStudentEmailService(student_name, email);
+
+    return res.status(200).json(
+      new SuccessResponse("Student updated successfully!", 200,
+        updatedStudent,
+      )
+    );
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json(new SuccessResponse(err.message || "Internal server error", 500));
+  }
+};
+
 export {
   RegisterStudentController,
   LoginStudentController,
   ForgotPasswordController,
   ResetPasswordController,
   StudentDetailsController,
-  StudentProfileController
+  StudentProfileController,
+  UpdateStudentEmailController
 };

@@ -4,7 +4,8 @@ import {
   ForgotPasswordController,
   ResetPasswordController,
   StudentDetailsController,
-  StudentProfileController
+  StudentProfileController,
+  UpdateStudentEmailController
 } from "../controllers/auth.controller";
 
 import express from "express";
@@ -16,7 +17,8 @@ authRouter.post("/login", LoginStudentController);
 authRouter.post("/forget-password", ForgotPasswordController);
 authRouter.post("/reset-password", ResetPasswordController);
 authRouter.post("/student-details", StudentDetailsController);
-authRouter.get("/student-profile/:studentId", StudentProfileController);
+authRouter.post("/student-profile", StudentProfileController);
+authRouter.put("/student/update-email", UpdateStudentEmailController);
 
 
 

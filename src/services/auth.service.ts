@@ -9,7 +9,6 @@ import { sendEmail } from "../utils/email_service.util";
 import handlebars from "handlebars";
 import fs from "fs";
 import path from "path";
-import { Types } from "mongoose";
 
 const templatePath = path.join(__dirname, "../templates/otp_email.html");
 const templateSource = fs.readFileSync(templatePath, "utf8");
@@ -193,13 +192,28 @@ const _resetPasswordService = async (
 };
 
 
-const _studentProfileService = async (studentId: Types.ObjectId) => {
-  const student = await User.findById(studentId).select("-password");
+const _studentProfileService = async (student_name: string) => {
+  const student = await User.findOne({
+    name: student_name
+  }).select("-password");
   if (!student) {
     throw new Error("Student not found.");
   }
   return student;
 }
+
+
+const _updateStudentEmailService = async (student_name: string, email: string) => {
+
+  const student = await User.findOne({ name: student_name });
+  if (!student) {
+    throw new Error("Student not found.");
+  }
+  student.email = email;
+  await student.save();
+
+  return student;
+};
 
 export {
   _registerStudent,
@@ -207,5 +221,6 @@ export {
   _forgotPasswordService,
   _resetPasswordService,
   _studentDetailsService,
-  _studentProfileService
+  _studentProfileService,
+  _updateStudentEmailService
 };
