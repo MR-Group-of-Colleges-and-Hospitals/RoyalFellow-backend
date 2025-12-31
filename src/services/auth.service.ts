@@ -84,7 +84,7 @@ const _loginForStudent = async (loginDto: Partial<LoginDto>) => {
 
 
 const _studentDetailsService = async (mobile_number: string) => {
-  const apiUrl = `https://erp.mrgroupofcolleges.co.in/api/get-student/${mobile_number}`;
+  const apiUrl = `${process.env.ERP_MASTER_API}/api/get-student/${mobile_number}`;
   try {
     const { data: erpResponse } = await axios.get(apiUrl, { timeout: 15000 });
 
